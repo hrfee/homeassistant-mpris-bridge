@@ -21,18 +21,25 @@ _LOGGER = logging.getLogger(__name__)
 class HassInterface:
     """Hass API interface, implements necessary parts of the websocket API."""
 
-    def __init__(self, endpoint, token):
+    def __init__(self, endpoint, token, player):
         self.ws = None
         self.http_endpoint = endpoint
         parsed = urlparse(self.http_endpoint)
         self.ws_endpoint = parsed._replace(scheme="ws", path="/api/websocket").geturl()
 
         self._token = token
+        self._player = player
 
         self._id = 0
         self._players = {}
 
         self._pending_requests = {}
+
+    async def set_single_player(self):
+        _LOGGER.info("%s" % self._player)
+        if self._player:
+            _LOGGER.info("Found new device, creating an interface for %s" % self._player)
+            self._players[self._player] = await self.create_interface_for_entity(self._player)
 
     @property
     def _request_id(self) -> int:
@@ -98,6 +105,9 @@ class HassInterface:
         This gets called with the HASS API provided data during the
         initial state fetching, as well as for state change events.
         """
+        if self._player and entity not in self._players:
+            return
+        
         if entity not in self._players:
             _LOGGER.info("Found new device, creating an interface for %s" % entity)
             self._players[entity] = await self.create_interface_for_entity(entity)
@@ -125,12 +135,12 @@ class HassInterface:
             if not entity_id.startswith("media_player."):
                 continue
 
-            state = item["state"]
-            if state == "playing":
-                _LOGGER.debug("%s is already playing, adding/updating..", entity_id)
-                attrs = item["attributes"]
-                attrs["entity_id"] = entity_id
-                await self.update_player(entity_id, item)
+            # state = item["state"]
+            # if state == "playing":
+            _LOGGER.debug("%s is already playing, adding/updating..", entity_id)
+            attrs = item["attributes"]
+            attrs["entity_id"] = entity_id
+            await self.update_player(entity_id, item)
 
     async def handle_call_service_result(self, res):
         """Handle call_service result."""

@@ -15,17 +15,19 @@ class Settings:
 
     endpoint: str
     token: str
+    player: str
     debug: bool = False
 
 
 @click.group(invoke_without_command=True)
 @click.option("--endpoint", required=False, envvar="HASSBRIDGE_ENDPOINT")
 @click.option("--token", required=False, envvar="HASSBRIDGE_TOKEN")
+@click.option("--player", required=False, envvar="HASSBRIDGE_PLAYER")
 @click.option("-d", "--debug", is_flag=True)
 @click.pass_context
-async def cli(ctx, endpoint, token, debug):
+async def cli(ctx, endpoint, token, debug, player):
     """hass-mpris bridge."""
-    ctx.obj = Settings(endpoint=endpoint, token=token, debug=debug)
+    ctx.obj = Settings(endpoint=endpoint, token=token, debug=debug, player=player)
 
     if ctx.invoked_subcommand is None:
         await ctx.invoke(start)
@@ -53,7 +55,8 @@ async def start(ctx):
 
     logging.info("Endpoint: %s" % settings.endpoint)
 
-    h = HassInterface(settings.endpoint, settings.token)
+    h = HassInterface(settings.endpoint, settings.token, settings.player)
+    await h.set_single_player()
 
     await h.start()
 
