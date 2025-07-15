@@ -36,12 +36,6 @@ class HassInterface:
 
         self._pending_requests = {}
 
-    async def set_single_player(self):
-        _LOGGER.info("%s" % self._player)
-        if self._player:
-            _LOGGER.info("Found new device, creating an interface for %s" % self._player)
-            self._players[self._player] = await self.create_interface_for_entity(self._player)
-
     @property
     def _request_id(self) -> int:
         """Increment and return id for new request."""
@@ -126,8 +120,13 @@ class HassInterface:
         This gets called with the HASS API provided data during the
         initial state fetching, as well as for state change events.
         """
-        if self._player and entity not in self._players:
-            return
+
+        if self._player:
+            friendly_name = None
+            if "attributes" in attrs and "friendly_name" in attrs["attributes"]:
+                friendly_name = attrs["attributes"]["friendly_name"]
+            if entity != self._player and friendly_name != self._player:
+                return
         
         if entity not in self._players:
             _LOGGER.info("Found new device, creating an interface for %s" % entity)

@@ -57,7 +57,6 @@ async def start(ctx):
     logging.info("Endpoint: %s" % settings.endpoint)
 
     h = HassInterface(settings.endpoint, settings.token, settings.player)
-    await h.set_single_player()
 
     await h.start()
 
